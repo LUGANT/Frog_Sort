@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import pygame
 import numpy as np
-from elementWithPosition import ElementWithPosition
-
+from modules.elementWithPosition import ElementWithPosition
 
 WHITE = (255, 255, 255)
 FRAMESIZE_X = 800
@@ -21,7 +20,7 @@ class GameHandler():
         game_display: Module
             Defines the display, it allows to use the flip method to update elements
         game_lines: list[Line]
-            Stores the lines used in the game to draw the plane's trajectory 
+            Stores the lines used in the game to draw the plane's trajectory
     """
 
     def __init__(self) -> None:
