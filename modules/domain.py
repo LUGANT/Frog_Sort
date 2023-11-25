@@ -1,6 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from math import ceil, floor
+import numpy as np
 
 class Frog(ABC):
     
@@ -23,21 +24,26 @@ class Frog(ABC):
         self._printIndex()
         self._isActionIllegal(action)
         if self.isPosibleToMove(board):
-            match action:
-                case 1: self._moveOneStep(board)
-                case 2: self._moveTwoSteps(board)
-        self._printIndex()
+            try:
+                match action:
+                    case 0: self._moveOneStep(board)
+                    case 1: self._moveTwoSteps(board)
+            except: #This happens when you can move, but you have choosen a spot where a frog lies
+                return -5 #No Reward
+            return 1 #Reward
+        else:
+            return 0 #No Reward
     
     def _isActionIllegal(self, action):
-        if action not in [1,2]:
-            raise Exception('illegal action')
+        if action not in [0,1]:
+            raise Exception(f'illegal action: {action} is not posible. Use 0 or 1 ')
 
     def _frogOnSpot(self, something: Frog | None):
         if something is not None:
-            raise Exception('There is a frog already there')
+            raise Exception('There is already a frog there')
 
     def isPosibleToMove(self, board:Board):
-        return (self._emptyInOneStep(board) | self._emptyInTwoStep(board)) & (not self.endReached(board))
+        return (self.emptyInOneStep(board) | self.emptyInTwoStep(board)) & (not self.endReached(board))
 
     def isNotPosibleToMove(self, board: Board):
         return not self.isPosibleToMove(board)
@@ -57,16 +63,20 @@ class Frog(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _emptyInOneStep(self,board:Board) -> bool:
+    def emptyInOneStep(self,board:Board) -> bool:
         raise NotImplementedError
         
     @abstractmethod
-    def _emptyInTwoStep(self,board:Board) -> bool:
+    def emptyInTwoStep(self,board:Board) -> bool:
         raise NotImplementedError
 
     @abstractmethod
     def endReached(self, board:Board) -> bool:
         raise NotImplementedError
+
+    @abstractmethod
+    def goalReached(self, board:Board) -> bool:
+        raise NotImplementedError 
 
 class RedFrog(Frog):
 
@@ -85,13 +95,13 @@ class RedFrog(Frog):
         board.array[self.index - 2] = self
         self._changeIndex(self.index - 2)
 
-    def _emptyInOneStep(self, board: Board) -> bool:
+    def emptyInOneStep(self, board: Board) -> bool:
         try:
             return board.array[self.index-1] == None
         except(IndexError):
             return False
 
-    def _emptyInTwoStep(self, board: Board) -> bool:
+    def emptyInTwoStep(self, board: Board) -> bool:
         try:
             return board.array[self.index-2] == None
         except(IndexError):
@@ -99,6 +109,9 @@ class RedFrog(Frog):
 
     def endReached(self, board: Board) -> bool:
         return 0 == self.index
+
+    def goalReached(self, board: Board) -> bool:
+        return self.index < board.nonePosition
 
 class BlueFrog(Frog):
 
@@ -117,13 +130,13 @@ class BlueFrog(Frog):
         board.array[self.index + 2] = self
         self._changeIndex(self.index + 2)
 
-    def _emptyInOneStep(self, board: Board) -> bool:
+    def emptyInOneStep(self, board: Board) -> bool:
         try:
             return board.array[self.index+1] == None
         except(IndexError):
             return False
     
-    def _emptyInTwoStep(self, board: Board) -> bool:
+    def emptyInTwoStep(self, board: Board) -> bool:
         try:
             return board.array[self.index+2] == None
         except(IndexError):
@@ -132,6 +145,9 @@ class BlueFrog(Frog):
     def endReached(self, board: Board) -> bool:
         return len(board.array) == self.index
 
+    def goalReached(self, board: Board) -> bool:
+        return self.index > board.nonePosition
+
 class Board():
     
     def __init__(self, frogSize: int) -> None:
@@ -139,10 +155,10 @@ class Board():
             raise Exception('Amount of frogs has to be odd')
         
         half = frogSize/2
-        nonePosition = floor(half)
+        self.nonePosition = floor(half)
         redFrogPositionStart = ceil(half)
 
-        blueFrogs = [ BlueFrog(index) for index in range(nonePosition) ]
+        blueFrogs = [ BlueFrog(index) for index in range(self.nonePosition) ]
         redFrogs = [ RedFrog(index) for index in range(redFrogPositionStart, frogSize) ]
 
         self.array:list[Frog | None] = blueFrogs + [None] + redFrogs
@@ -151,14 +167,48 @@ class Board():
     def __str__(self) -> str:
         return str([str(frog) if frog is not None else None for frog in self.array])
 
+    def reversed__str__(self) -> str:
+        return str([str(frog) if frog is not None else None for frog in reversed(self.array)])
+
     def moveFrog(self, index:int, action):
         try:
-            self.array[index].move(self,action)
+            isActionCompleted = self.array[index].move(self,action)
             self._checkGameOver()
+            return self.getArrayInfo(), isActionCompleted
         except(AttributeError):
             raise Exception('You are not selecting a frog')
 
+    def getFrog(self, index:int) -> Frog:
+        if self.array[index] == None:
+            raise Exception("There's no frog here")
+        return self.array[index]
+
+    def getArrayInfo(self):
+        array = np.full(shape= len(self.array), fill_value=-1, dtype=int)
+        for frog in self.frogs:
+            if frog.emptyInOneStep(self):
+                array[frog.index] = 1
+            if frog.emptyInTwoStep(self):
+                array[frog.index] = 2
+            if frog.isNotPosibleToMove(self):
+                array[frog.index] = 0
+        return array
+
     def _checkGameOver(self):
-        gameover = all(frog.isNotPosibleToMove(self) for frog in self.frogs)
-        if gameover:
-            print("You solved the puzzle!!!")
+
+        if self.noPosibleMoves():
+
+            if self.puzzleSolved():
+                print("You solved the puzzle!!!")
+                
+            else:
+                print("You lost :C")
+
+    def gameStruncated(self):
+        return self.noPosibleMoves() & (not self.puzzleSolved())
+
+    def noPosibleMoves(self):
+        return all(frog.isNotPosibleToMove(self) for frog in self.frogs)
+    
+    def puzzleSolved(self):
+        return all(frog.goalReached(self) for frog in self.frogs)
