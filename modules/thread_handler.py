@@ -1,35 +1,40 @@
 # importing the modules 
-from threading import *         
-import time         
-  
-# creating thread instance where count = 3 
-obj = Semaphore(3)         
-  
-# creating instance 
-def display(name):     
+import threading
+from threading import Semaphore
+from modules.domain import Board, RedFrog, BlueFrog
+import random
+
+class PuzzleSolverThread(threading.Thread):
     
-    # calling acquire method 
-    obj.acquire()
-    for i in range(3): 
-        print('Hello, ', end = '') 
-        time.sleep(10) 
-        print(name) 
-          
-        # calling release method 
-        obj.release()     
-          
-# creating multiple thread  
-t1 = Thread(target = display , args = ('Thread-1',)) 
-t2 = Thread(target = display , args = ('Thread-2',)) 
-t3 = Thread(target = display , args = ('Thread-3',)) 
-t4 = Thread(target = display , args = ('Thread-4',)) 
-t5 = Thread(target = display , args = ('Thread-5',)) 
-t6 = Thread(target = display , args = ('Thread-6',)) 
-  
-# calling the threads  
-t1.start() 
-t2.start() 
-t3.start() 
-t4.start() 
-t5.start()
-t6.start()
+    def __init__(self, board, frog, id, semaphore):
+        super().__init__()
+        self.board: Board = board
+        self.frog: RedFrog | BlueFrog = frog
+        self.threadId = id
+        self.semaphore: Semaphore = semaphore
+
+    def run(self):
+        max_attempts = 10  # Número máximo de intentos
+        current_attempt = 0
+
+        while not self.board.puzzleSolved() and not self.board.noPosibleMoves():
+            action = random.choice([1,2])
+            
+            while current_attempt < max_attempts:
+                
+                try:
+                    self.semaphore.acquire()
+                    if self.board.moveFrog(self.frog.index, action):
+                        # El movimiento fue exitoso, salir del bucle de intentos
+                        break
+                    current_attempt += 1
+
+                except Exception as e:
+                    print(f"Error in thread {self.threadId}: {e}")
+                    current_attempt += 1
+
+                finally:
+                    self.semaphore.release()
+
+            # Si llegamos a este punto, hemos agotado los intentos
+            current_attempt = 0

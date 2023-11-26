@@ -12,29 +12,29 @@ class Frog(ABC):
                 callable(subclass.extract_text) or 
                 NotImplemented)
 
-    def __init__(self, index) -> None:
+    def __init__(self, index, id) -> None:
         self.index = index
+        self.id = id
 
     @abstractmethod
     def __str__(self) -> str:
         return 'Frog'
 
     def move(self, board:Board, action):
-        self._printIndex()
+        # self._printIndex()
         self._isActionIllegal(action)
         if self.isPosibleToMove(board):
             match action:
-                case 1: self._moveOneStep(board)
-                case 2: self._moveTwoSteps(board)
-        self._printIndex()
+                case 1: return self._moveOneStep(board)
+                case 2: return self._moveTwoSteps(board)
+        # self._printIndex()
     
     def _isActionIllegal(self, action):
         if action not in [1,2]:
             raise Exception('illegal action')
 
     def _frogOnSpot(self, something: Frog | None):
-        if something is not None:
-            raise Exception('There is a frog already there')
+        return something is not None
 
     def isPosibleToMove(self, board:Board):
         return (self._emptyInOneStep(board) | self._emptyInTwoStep(board)) & (not self.endReached(board))
@@ -42,18 +42,21 @@ class Frog(ABC):
     def isNotPosibleToMove(self, board: Board):
         return not self.isPosibleToMove(board)
 
-    def _changeIndex(self,index):
+    def changeIndex(self,index):
         self.index = index
 
+    def goBack(self):
+        self.index = self.id
+
     def _printIndex(self):
-        print(f'Now my position is {self.index}')
+        print(f'{str(self)}_{self.id} = estoy en indice {self.index}')
 
     @abstractmethod
-    def _moveOneStep(self, board:Board):
+    def _moveOneStep(self, board:Board) -> bool:
         raise NotImplementedError
 
     @abstractmethod
-    def _moveTwoSteps(self, board:Board):
+    def _moveTwoSteps(self, board:Board) -> bool:
         raise NotImplementedError
 
     @abstractmethod
@@ -78,16 +81,22 @@ class RedFrog(Frog):
         return 'RedFrog'
 
     def _moveOneStep(self, board:Board):
-        self._frogOnSpot(board.array[self.index - 1])
-        board.array[self.index] = None
-        board.array[self.index - 1] = self
-        self._changeIndex(self.index - 1)
+        if not self._frogOnSpot(board.array[self.index - 1]):
+            board.array[self.index] = None
+            board.array[self.index - 1] = self
+            self.changeIndex(self.index - 1)
+            return True
+        else:
+            return False
     
     def _moveTwoSteps(self, board:Board):
-        self._frogOnSpot(board.array[self.index - 2])
-        board.array[self.index] = None
-        board.array[self.index - 2] = self
-        self._changeIndex(self.index - 2)
+        if not self._frogOnSpot(board.array[self.index - 2]):
+            board.array[self.index] = None
+            board.array[self.index - 2] = self
+            self.changeIndex(self.index - 2)
+            return True
+        else:
+            return False
 
     def _emptyInOneStep(self, board: Board) -> bool:
         try:
@@ -113,16 +122,22 @@ class BlueFrog(Frog):
         return 'BlueFrog'
 
     def _moveOneStep(self, board:Board):
-        self._frogOnSpot(board.array[self.index + 1])
-        board.array[self.index] = None
-        board.array[self.index + 1] = self
-        self._changeIndex(self.index + 1)
+        if not self._frogOnSpot(board.array[self.index + 1]):
+            board.array[self.index] = None
+            board.array[self.index + 1] = self
+            self.changeIndex(self.index + 1)
+            return True
+        else:
+            return False
     
     def _moveTwoSteps(self, board:Board):
-        self._frogOnSpot(board.array[self.index + 2])
-        board.array[self.index] = None
-        board.array[self.index + 2] = self
-        self._changeIndex(self.index + 2)
+        if not self._frogOnSpot(board.array[self.index + 2]):
+            board.array[self.index] = None
+            board.array[self.index + 2] = self
+            self.changeIndex(self.index + 2)
+            return True
+        else:
+            return False
 
     def _emptyInOneStep(self, board: Board) -> bool:
         try:
@@ -148,18 +163,29 @@ class Board():
         if (frogSize % 2) == 0:
             raise Exception('Amount of frogs has to be odd')
         
+        self.frogSize = frogSize
         half = frogSize/2
         self.nonePosition = floor(half)
-        redFrogPositionStart = ceil(half)
+        self.redFrogPositionStart = ceil(half)
 
-        blueFrogs = [ BlueFrog(index) for index in range(self.nonePosition) ]
-        redFrogs = [ RedFrog(index) for index in range(redFrogPositionStart, frogSize) ]
+        self.blueFrogs = [ BlueFrog(index, index) for index in range(self.nonePosition) ]
+        self.redFrogs = [ RedFrog(index, index) for index in range(self.redFrogPositionStart, self.frogSize) ]
 
-        self.array:list[Frog | None] = blueFrogs + [None] + redFrogs
-        self.frogs = blueFrogs + redFrogs
+        self.array:list[Frog | None] = self.blueFrogs + [None] + self.redFrogs
+        self.frogs = self.blueFrogs + self.redFrogs
+        self.steps = []
 
     def __str__(self) -> str:
         return str([str(frog) if frog is not None else None for frog in self.array])
+
+    def moveFrog(self, index:int, action):
+        try:
+            successfulAction = self.array[index].move(self,action)
+            if successfulAction:
+                self.steps.append( (index, action) )
+            self._checkGameOver()
+        except(AttributeError):
+            raise Exception('You are not selecting a frog')
 
     def _checkGameOver(self):
 
@@ -167,17 +193,28 @@ class Board():
 
             if self.puzzleSolved():
                 print("You solved the puzzle!!!")
-                
+                print(self.steps)
             else:
                 print("You lost :C")
+                self.reset()
+                raise Exception('You lost! Now reset')
 
-    def _checkGameOver(self):
-        gameover = all(frog.isNotPosibleToMove(self) for frog in self.frogs)
-        if gameover:
-            print("You solved the puzzle!!!")
+    def reset(self):
+        
+        for frog in self.blueFrogs:
+            frog.goBack()
+
+        for frog in self.redFrogs:
+            frog.goBack()
+
+        self.array = self.blueFrogs + [None] + self.redFrogs
+        self.steps = []
 
     def noPosibleMoves(self):
         return all(frog.isNotPosibleToMove(self) for frog in self.frogs)
     
+    def posibleToMove(self):
+        return [frog.isPosibleToMove(self) for frog in self.frogs]
+
     def puzzleSolved(self):
         return all(frog.goalReached(self) for frog in self.frogs)
