@@ -2,7 +2,7 @@ from modules.domain import Board
 
 # Example with 3 frogs
 # board = Board(2) # Raises exception - only odd numbers
-board = Board(3)
+board = Board(5)
 print(str(board))
 
 # board.moveFrog(0,2) # Raises exception - there is already a frog there
