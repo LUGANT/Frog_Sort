@@ -68,6 +68,10 @@ class Frog(ABC):
     def endReached(self, board:Board) -> bool:
         raise NotImplementedError
 
+    @abstractmethod
+    def goalReached(self, board:Board) -> bool:
+        raise NotImplementedError 
+
 class RedFrog(Frog):
 
     def __str__(self):
@@ -99,6 +103,9 @@ class RedFrog(Frog):
 
     def endReached(self, board: Board) -> bool:
         return 0 == self.index
+
+    def goalReached(self, board: Board) -> bool:
+        return self.index < board.nonePosition
 
 class BlueFrog(Frog):
 
@@ -132,6 +139,9 @@ class BlueFrog(Frog):
     def endReached(self, board: Board) -> bool:
         return len(board.array) == self.index
 
+    def goalReached(self, board: Board) -> bool:
+        return self.index > board.nonePosition
+
 class Board():
     
     def __init__(self, frogSize: int) -> None:
@@ -139,10 +149,10 @@ class Board():
             raise Exception('Amount of frogs has to be odd')
         
         half = frogSize/2
-        nonePosition = floor(half)
+        self.nonePosition = floor(half)
         redFrogPositionStart = ceil(half)
 
-        blueFrogs = [ BlueFrog(index) for index in range(nonePosition) ]
+        blueFrogs = [ BlueFrog(index) for index in range(self.nonePosition) ]
         redFrogs = [ RedFrog(index) for index in range(redFrogPositionStart, frogSize) ]
 
         self.array:list[Frog | None] = blueFrogs + [None] + redFrogs
@@ -151,14 +161,23 @@ class Board():
     def __str__(self) -> str:
         return str([str(frog) if frog is not None else None for frog in self.array])
 
-    def moveFrog(self, index:int, action):
-        try:
-            self.array[index].move(self,action)
-            self._checkGameOver()
-        except(AttributeError):
-            raise Exception('You are not selecting a frog')
+    def _checkGameOver(self):
+
+        if self.noPosibleMoves():
+
+            if self.puzzleSolved():
+                print("You solved the puzzle!!!")
+                
+            else:
+                print("You lost :C")
 
     def _checkGameOver(self):
         gameover = all(frog.isNotPosibleToMove(self) for frog in self.frogs)
         if gameover:
             print("You solved the puzzle!!!")
+
+    def noPosibleMoves(self):
+        return all(frog.isNotPosibleToMove(self) for frog in self.frogs)
+    
+    def puzzleSolved(self):
+        return all(frog.goalReached(self) for frog in self.frogs)
