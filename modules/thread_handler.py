@@ -93,8 +93,8 @@ class FrogThread(threading.Thread):
 
                     frog = self.getPreviousFrog()
 
-                    if frog.endReached(self.board):
-                        frog: Frog = self.frogs[index+1]
+                    # if frog.endReached(self.board):
+                    #     frog: Frog = self.frogs[index+1]
                     
                     if frog.emptyInOneStep(self.board):
                         self.board.moveFrog(frog.index, 1)
@@ -137,5 +137,5 @@ class FrogHandler():
         self.redFrogThread.start()
 
     def finish(self):
-        self.redFrogThread.join()
         self.blueFrogThread.join()
+        self.redFrogThread.join()
