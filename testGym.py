@@ -18,8 +18,8 @@ space = MultiDiscrete([boardLen, 2])
 # print(espacio_de_accion_expandido)
 # print(type(espacio_de_accion_expandido))
 # print(action_space)
-print(space.sample())
-print(type(space.sample()))
+# print(space.sample())
+# print(type(space.sample()))
 
 # env = gym.make("frog_env")
 

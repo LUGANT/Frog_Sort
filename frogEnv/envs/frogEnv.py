@@ -5,11 +5,6 @@ from gymnasium.spaces import MultiDiscrete, Box
 import numpy as np
 
 boardLen = 5
-def getActionSpace():
-    action_space = [boardLen]
-    for _ in range(boardLen-1): # -1 because there a none in board
-        action_space.append(2)
-    return action_space 
 
 class FrogEnv(gym.Env):
 
@@ -17,21 +12,30 @@ class FrogEnv(gym.Env):
 
     def __init__(self) -> None:
         self.render_mode = 'human'
-        self.board:Board = None
+        self.board:Board = Board(boardLen)
         self.observation_space = Box(low=-1, high=2, shape=(boardLen,), dtype=int)
-        self.action_space = MultiDiscrete(getActionSpace())
+        self.action_space = MultiDiscrete([boardLen,boardLen])
         self.steps = None
+        self.accumulatedReward = None
         self.stepsTaken: list = None
 
     def step(self, action: np.ndarray):
 
         boardIndex = action[0]
-        frogAction = action[boardIndex+1]
+        frogAction = action[1]
 
         self.stepsTaken.append(action)
 
         observation, reward = self.board.moveFrog(boardIndex, frogAction)
         print(self.board)
+
+        if reward < 0:
+            self.accumulatedReward = reward
+        else:
+            self.accumulatedReward += reward
+
+        if self.board.puzzleSolved():
+            self.accumulatedReward += 100
 
         terminated = self.board.puzzleSolved()
         truncated = self.board.gameStruncated()
@@ -40,13 +44,14 @@ class FrogEnv(gym.Env):
         if terminated:
             print(f'The solution was {self.stepsTaken}')
 
-        return observation, reward, terminated, truncated, info
+        return observation, self.accumulatedReward, terminated, truncated, info
     
     def reset(self, *, seed=None, options= None) -> tuple[Any, dict[str, Any]]:
-        self.board = Board(boardLen)
+        self.board.reset()
         self.steps = 0
         self.initialReward = 1
         self.stepsTaken = []
+        self.accumulatedReward = 0
         info = {}
         observation = self.board.getArrayInfo()        
         return observation, info

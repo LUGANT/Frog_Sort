@@ -1,3 +1,4 @@
 import numpy as np
 
-print(np.array([[0,0],[0]]))
+s = (2,5)
+print(np.zeros(s))

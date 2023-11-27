@@ -5,13 +5,30 @@ from modules.mask import maskedActions
 import gymnasium as gym
 from gymnasium.spaces import MultiDiscrete
 from frogEnv.envs.frogEnv import FrogEnv
+import os
+import tensorflow as tf
 
 env = gym.make("frog_env")
 
 env = ActionMasker(env, maskedActions)
 
+models_dir = "models/PPO"
 logdir = "logs"
-models_dir = "models/frogMaskPPO"
+
+Writer = tf.summary.create_file_writer(logdir)
+
+if not os.path.exists(models_dir):
+    os.makedirs(models_dir)
+
+if not os.path.exists(logdir):
+    os.makedirs(logdir)
+
+TIMESTEPS = 200_000
+
+# crear tu propia red neuronal para el entrenamiento 
+policy_kwargs = dict(
+    net_arch=dict(pi=[512,512], vf=[512,512])
+)
 
 class ExplorationDecayCallback(BaseCallback):
     def __init__(self, exploration_start: float, exploration_end: float, total_timesteps: int, verbose=0):
@@ -31,14 +48,16 @@ exploration_start = 0.4
 exploration_end = 0.05
 total_timesteps = 1_000_000
 
-model = MaskablePPO("MlpPolicy", env, verbose=1,learning_rate=2.5e-4, 
+callback = ExplorationDecayCallback(exploration_start, exploration_end, total_timesteps)
+
+model = MaskablePPO("MlpPolicy", env, verbose=1, learning_rate=2.5e-4, 
             tensorboard_log= logdir)
 
 TIMESTEPS = 200_000
 
-for i in range(6):
+for i in range(5):
     model.learn(total_timesteps=TIMESTEPS, progress_bar=True, 
                 reset_num_timesteps=False, 
-                 tb_log_name="frog_puzzle_V_0.1")
+                 tb_log_name="frog_puzzle_V_0.3")
 
     model.save(f"{models_dir}/{TIMESTEPS*i}")

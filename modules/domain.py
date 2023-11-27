@@ -13,8 +13,9 @@ class Frog(ABC):
                 callable(subclass.extract_text) or 
                 NotImplemented)
 
-    def __init__(self, index) -> None:
+    def __init__(self, index,id) -> None:
         self.index = index
+        self.id = id
 
     @abstractmethod
     def __str__(self) -> str:
@@ -29,11 +30,14 @@ class Frog(ABC):
                     case 0: self._moveOneStep(board)
                     case 1: self._moveTwoSteps(board)
             except: #This happens when you can move, but you have choosen a spot where a frog lies
-                return -5 #No Reward
+                return -1 #No Reward
             return 1 #Reward
         else:
             return 0 #No Reward
     
+    def goBack(self):
+        self.index = self.id
+
     def _isActionIllegal(self, action):
         if action not in [0,1]:
             raise Exception(f'illegal action: {action} is not posible. Use 0 or 1 ')
@@ -158,11 +162,13 @@ class Board():
         self.nonePosition = floor(half)
         redFrogPositionStart = ceil(half)
 
-        blueFrogs = [ BlueFrog(index) for index in range(self.nonePosition) ]
-        redFrogs = [ RedFrog(index) for index in range(redFrogPositionStart, frogSize) ]
+        self.blueFrogs = [ BlueFrog(index,index) for index in range(self.nonePosition) ]
+        self.redFrogs = [ RedFrog(index,index) for index in range(redFrogPositionStart, frogSize) ]
+        self.array:list[Frog | None] = self.blueFrogs + [None] + self.redFrogs
+        self.frogs = self.blueFrogs + self.redFrogs
 
-        self.array:list[Frog | None] = blueFrogs + [None] + redFrogs
-        self.frogs = blueFrogs + redFrogs
+        solutionArray = list(range(1, self.nonePosition+1)) + [self.nonePosition] + list(range(self.nonePosition, 0,-1))
+        self.totalPunishment = - sum(solutionArray)
 
     def __str__(self) -> str:
         return str([str(frog) if frog is not None else None for frog in self.array])
@@ -174,6 +180,10 @@ class Board():
         try:
             isActionCompleted = self.array[index].move(self,action)
             self._checkGameOver()
+
+            if isActionCompleted == -1:
+                isActionCompleted = self.totalPunishment
+
             return self.getArrayInfo(), isActionCompleted
         except(AttributeError):
             raise Exception('You are not selecting a frog')
@@ -203,6 +213,18 @@ class Board():
                 
             else:
                 print("You lost :C")
+
+    def reset(self):
+        
+        for frog in self.blueFrogs:
+            frog.goBack()
+
+        for frog in self.redFrogs:
+            frog.goBack()
+
+        self.array = self.blueFrogs + [None] + self.redFrogs
+        self.steps = []
+        self.sameStep = 3
 
     def gameStruncated(self):
         return self.noPosibleMoves() & (not self.puzzleSolved())
