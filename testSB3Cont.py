@@ -58,6 +58,6 @@ TIMESTEPS = 200_000
 for i in range(5):
     model.learn(total_timesteps=TIMESTEPS, progress_bar=True, 
                 reset_num_timesteps=False, 
-                 tb_log_name="frog_puzzle_V_0.3")
+                 tb_log_name="frog_puzzle_V_0.6")
 
     model.save(f"{models_dir}/{TIMESTEPS*i}")

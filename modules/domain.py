@@ -27,8 +27,8 @@ class Frog(ABC):
         if self.isPosibleToMove(board):
             try:
                 match action:
-                    case 0: self._moveOneStep(board)
-                    case 1: self._moveTwoSteps(board)
+                    case 1: self._moveOneStep(board)
+                    case 2: self._moveTwoSteps(board)
             except: #This happens when you can move, but you have choosen a spot where a frog lies
                 return -1 #No Reward
             return 1 #Reward
@@ -39,7 +39,7 @@ class Frog(ABC):
         self.index = self.id
 
     def _isActionIllegal(self, action):
-        if action not in [0,1]:
+        if action not in [1,2]:
             raise Exception(f'illegal action: {action} is not posible. Use 0 or 1 ')
 
     def _frogOnSpot(self, something: Frog | None):

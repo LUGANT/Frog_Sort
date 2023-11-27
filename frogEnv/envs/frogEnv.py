@@ -14,7 +14,7 @@ class FrogEnv(gym.Env):
         self.render_mode = 'human'
         self.board:Board = Board(boardLen)
         self.observation_space = Box(low=-1, high=2, shape=(boardLen,), dtype=int)
-        self.action_space = MultiDiscrete([boardLen,boardLen])
+        self.action_space = MultiDiscrete([boardLen+1,boardLen+1])
         self.steps = None
         self.accumulatedReward = None
         self.stepsTaken: list = None
@@ -25,6 +25,7 @@ class FrogEnv(gym.Env):
         frogAction = action[1]
 
         self.stepsTaken.append(action)
+        self.steps += 1
 
         observation, reward = self.board.moveFrog(boardIndex, frogAction)
         print(self.board)
@@ -32,7 +33,7 @@ class FrogEnv(gym.Env):
         if reward < 0:
             self.accumulatedReward = reward
         else:
-            self.accumulatedReward += reward
+            self.accumulatedReward += reward + self.steps
 
         if self.board.puzzleSolved():
             self.accumulatedReward += 100
