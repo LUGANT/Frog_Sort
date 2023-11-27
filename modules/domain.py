@@ -167,7 +167,7 @@ class BlueFrog(Frog):
             return False
 
     def endReached(self, board: Board) -> bool:
-        return len(board.array) == self.index
+        return len(board.array)-1 == self.index
 
     def goalReached(self, board: Board) -> bool:
         return self.index > board.nonePosition
@@ -199,7 +199,7 @@ class Board():
         try:
             successfulAction = self.array[index].move(self,action)
             # print(self)
-            input()
+            # input()
             if successfulAction:
                 self.steps.append( (index, action) )
             self._checkGameOver()
@@ -212,6 +212,7 @@ class Board():
         if self.noPosibleMoves() and not self.puzzleSolved():
             print("You lost :C")
             print(str(self))
+            print(self.steps)
             self.reset()
             raise Exception('You lost! Now reset')
 
@@ -246,10 +247,14 @@ class BoardThread(Board):
         print(f'esta es la solucion array: {self.solutionArray}')
 
     def amountOfSteps(self):
+        print(f'el valor de step es {self.step}')
         number = self.solutionArray[self.step]
-        self.step += 1
+        print(f'El numero de raanas es {number}')
         return number
         
+    def doAStep(self):
+        self.step += 1
+
     def reset(self):
         self.step = 0
         super().reset()
