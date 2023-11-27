@@ -4,7 +4,9 @@ import threading
 from threading import Lock
 from typing import Any
 from modules.domain import Board, RedFrog, BlueFrog, BoardThread, Frog
+from modules.write import writeAnswer
 import random
+import time
 
 class PuzzleSolverThread(threading.Thread):
     
@@ -76,13 +78,15 @@ class FrogThread(threading.Thread):
 
         while not self.board.puzzleSolved() or not self.board.noPosibleMoves():
             
-            print(f'agarre el semaforo, soy {str(self)}')
-            print(str(self.board))
-            print()
+            # print(f'agarre el semaforo, soy {str(self)}')
+            # print(str(self.board))
+
+            time.sleep(0.0001)
+
             self.semaphore.acquire()
 
             try:
-                for index in list(range( self.board.amountOfSteps() )):
+                for index in list(range( self.board.amountOfSteps())):
 
                     frog: Frog = self.frogs[index]
 
@@ -92,32 +96,19 @@ class FrogThread(threading.Thread):
                         frog: Frog = self.frogs[index+1]
                     
                     if frog.emptyInOneStep(self.board):
-
                         self.board.moveFrog(frog.index, 1)
 
-                        print(f'di un paso, soy {str(self)}')
-                        print(str(self.board))
-                        # print()
-
                     if frog.emptyInTwoStep(self.board):
-
                         self.board.moveFrog(frog.index, 2)
-                        
-                        print(f'di dos pasos, soy {str(self)}')
-                        print(str(self.board))
-                        # print()
 
             except Exception as e:
-
-                print()
-                # input()
+                pass
 
             finally:
-                self.semaphore.release()
                 self.board.doAStep()
+                self.semaphore.release()
 
-        print(str(self.board))
-        print(self.board.steps)
+        writeAnswer(self.board.steps)
 
 class RedFrogThread(FrogThread):
 
@@ -136,7 +127,6 @@ class FrogHandler():
 
     def __init__(self, size) -> None:
         self.board = BoardThread(size)
-        print(str(self.board))
         self.semaphore = Lock()
         self.redFrogThread = RedFrogThread(self.board, self.semaphore)
         self.blueFrogThread = BlueFrogThread(self.board, self.semaphore)

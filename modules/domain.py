@@ -1,6 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from math import ceil, floor
+import time
 
 class Frog(ABC):
     
@@ -203,6 +204,7 @@ class Board():
             if successfulAction:
                 self.steps.append( (index, action) )
             self._checkGameOver()
+            self._checkSolvedPuzzle()
             return successfulAction
         except(AttributeError):
             raise Exception('You are not selecting a frog')
@@ -215,6 +217,11 @@ class Board():
             print(self.steps)
             self.reset()
             raise Exception('You lost! Now reset')
+        
+    def _checkSolvedPuzzle(self):
+
+        if self.puzzleSolved():
+           print('You solved the puzzle!!!')
 
     def reset(self):
         
@@ -244,14 +251,19 @@ class BoardThread(Board):
 
         self.step = 0
         self.solutionArray = list(range(1, self.nonePosition+1)) + [self.nonePosition] + list(range(self.nonePosition, 0,-1))
-        print(f'esta es la solucion array: {self.solutionArray}')
+        # print(f'esta es la solucion array: {self.solutionArray}')
 
     def amountOfSteps(self):
-        print(f'el valor de step es {self.step}')
+        # print(f'el valor de step es {self.step}')
         number = self.solutionArray[self.step]
-        print(f'El numero de raanas es {number}')
+        time.sleep(0.0001)
+        # print(f'El numero de ranas es {number}')
+
         return number
-        
+    
+    def percentage(self):
+        pass
+
     def doAStep(self):
         self.step += 1
 
