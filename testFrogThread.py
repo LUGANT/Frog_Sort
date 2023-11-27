@@ -2,12 +2,14 @@ from modules.thread_handler import FrogHandler
 from modules.domain import Board
 from modules.write import readAnswer
 
-frogHandler = FrogHandler(1001)
+froglen = 501
+
+frogHandler = FrogHandler(froglen)
 
 frogHandler.start()
 frogHandler.finish()
 
-board = Board(1001)
+board = Board(froglen)
 answer = readAnswer()
 print(f'el resultado es {answer}')
 

@@ -80,8 +80,9 @@ class FrogThread(threading.Thread):
             
             # print(f'agarre el semaforo, soy {str(self)}')
             # print(str(self.board))
-
-            time.sleep(0.0001)
+            
+            print(f"completado: {self.board.percentage()}%")
+            time.sleep(0.001)
 
             self.semaphore.acquire()
 

@@ -256,13 +256,13 @@ class BoardThread(Board):
     def amountOfSteps(self):
         # print(f'el valor de step es {self.step}')
         number = self.solutionArray[self.step]
-        time.sleep(0.0001)
+        time.sleep(0.001)
         # print(f'El numero de ranas es {number}')
 
         return number
     
     def percentage(self):
-        pass
+        return (self.step*100)/self.frogSize
 
     def doAStep(self):
         self.step += 1
