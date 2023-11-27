@@ -40,7 +40,7 @@ class Frog(ABC):
         return self.isPosibleToDoSomething(board) and not self.endReached(board)
 
     def isPosibleToDoSomething(self, board):
-        return self._emptyInOneStep(board) | self._emptyInTwoStep(board)
+        return self.emptyInOneStep(board) | self.emptyInTwoStep(board)
 
     def isNotPosibleToMove(self, board: Board):
         return not self.isPosibleToMove(board)
@@ -63,11 +63,11 @@ class Frog(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _emptyInOneStep(self,board:Board) -> bool:
+    def emptyInOneStep(self,board:Board) -> bool:
         raise NotImplementedError
         
     @abstractmethod
-    def _emptyInTwoStep(self,board:Board) -> bool:
+    def emptyInTwoStep(self,board:Board) -> bool:
         raise NotImplementedError
 
     @abstractmethod
@@ -107,13 +107,13 @@ class RedFrog(Frog):
         except:
             return False
 
-    def _emptyInOneStep(self, board: Board) -> bool:
+    def emptyInOneStep(self, board: Board) -> bool:
         try:
             return board.array[self.index-1] == None
         except(IndexError):
             return False
 
-    def _emptyInTwoStep(self, board: Board) -> bool:
+    def emptyInTwoStep(self, board: Board) -> bool:
         try:
             return board.array[self.index-2] == None
         except(IndexError):
@@ -154,13 +154,13 @@ class BlueFrog(Frog):
         except:
             return False
 
-    def _emptyInOneStep(self, board: Board) -> bool:
+    def emptyInOneStep(self, board: Board) -> bool:
         try:
             return board.array[self.index+1] == None
         except(IndexError):
             return False
     
-    def _emptyInTwoStep(self, board: Board) -> bool:
+    def emptyInTwoStep(self, board: Board) -> bool:
         try:
             return board.array[self.index+2] == None
         except(IndexError):
@@ -198,9 +198,12 @@ class Board():
     def moveFrog(self, index:int, action):
         try:
             successfulAction = self.array[index].move(self,action)
+            # print(self)
+            input()
             if successfulAction:
                 self.steps.append( (index, action) )
             self._checkGameOver()
+            return successfulAction
         except(AttributeError):
             raise Exception('You are not selecting a frog')
 
@@ -236,18 +239,16 @@ class Board():
 class BoardThread(Board):
     
     def __init__(self, frogSize: int) -> None:
-        self.step = 0
         super().__init__(frogSize)
 
+        self.step = 0
+        self.solutionArray = list(range(1, self.nonePosition+1)) + [self.nonePosition] + list(range(self.nonePosition, 0,-1))
+        print(f'esta es la solucion array: {self.solutionArray}')
+
     def amountOfSteps(self):
-        if self.step <= self.frogLen:
-            self.step += 1
-            return self.step
-        if self.step == self.frogLen+1:
-            return self.frogLen
-        if self.step >= self.frogLen+2 and self.step != 0:
-            self.step -= 1
-            return self.step
+        number = self.solutionArray[self.step]
+        self.step += 1
+        return number
         
     def reset(self):
         self.step = 0

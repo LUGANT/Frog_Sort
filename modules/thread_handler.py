@@ -1,19 +1,19 @@
 # importing the modules 
 from collections.abc import Callable, Iterable, Mapping
 import threading
-from threading import Semaphore
+from threading import Lock
 from typing import Any
-from modules.domain import Board, RedFrog, BlueFrog, BoardThread
+from modules.domain import Board, RedFrog, BlueFrog, BoardThread, Frog
 import random
 
 class PuzzleSolverThread(threading.Thread):
     
-    def __init__(self, board, frog, id, semaphore):
+    def __init__(self, board, frog, id):
         super().__init__()
         self.board: Board = board
         self.frog: RedFrog | BlueFrog = frog
         self.threadId = id
-        self.semaphore: Semaphore = semaphore
+        self.semaphore: Lock = Lock()
 
     def run(self):
         max_attempts = 10  # Número máximo de intentos
@@ -56,39 +56,87 @@ class PuzzleSolverThread(threading.Thread):
         #         print(f"Error in thread {self.threadId}: {e}")
         #         # self.semaphore.release()
 
-class RedFrogThread(threading.Thread):
+class FrogThread(threading.Thread):
 
-    def __init__(self, board: BoardThread, semaphore: Semaphore):
+    def __init__(self, board: BoardThread, semaphore: Lock):
         super().__init__()
         self.board = board
         self.semaphore = semaphore
-        self.frogs = board.redFrogs
         self.maxSteps = len(board.frogs)
+        self.frogs: list[Frog] = None
 
     def run(self) -> None:
-        return super().run()
-    
-class BlueFrogThread(threading.Thread):
 
-    def __init__(self, board: BoardThread, semaphore: Semaphore):
-        super().__init__()
-        self.board = board
-        self.semaphore = semaphore
-        self.frogs = board.blueFrogs
-        self.frogLen = len(self.frogs)
+        while not self.board.puzzleSolved() and not self.board.noPosibleMoves():
+            
+            self.semaphore.acquire()
+            print(f'agarre el semaforo, soy {str(self)}')
+            print(str(self.board))
+            print()
 
-    def run(self) -> None:
-        while True:
-            return super().run()
-    
+            try:
+                for index in range( self.board.amountOfSteps() ):
+
+                    frog: Frog = self.frogs[index]
+                    
+                    if frog.emptyInOneStep(self.board):
+
+                        self.board.moveFrog(frog.index, 1)
+
+                        print(f'di un paso, soy {str(self)}')
+                        print(str(self.board))
+                        print()
+
+                        self.semaphore.release()
+
+                    if frog.emptyInTwoStep(self.board):
+
+                        self.board.moveFrog(frog.index, 2)
+                        
+                        print(f'di dos pasos, soy {str(self)}')
+                        print(str(self.board))
+                        print()
+
+                        self.semaphore.release()
+                        
+
+            except Exception as e:
+                print(f'algo pasó: {e}')
+                print(self.board.steps)
+                print(str(self.board))
+                input()
+
+            # self.semaphore.release()
+
+        print(str(self.board))
+        print(self.board.steps)
+
+class RedFrogThread(FrogThread):
+
+    def __init__(self, board: BoardThread, semaphore: Lock):
+        super().__init__(board, Lock())
+        self.frogs: list[Frog] = self.board.redFrogs
+
+class BlueFrogThread(FrogThread):
+
+    def __init__(self, board: BoardThread, semaphore: Lock):
+        super().__init__(board, Lock())
+        self.frogs: list[Frog] = self.board.blueFrogs
+        self.frogs.reverse()
+
 class FrogHandler():
 
     def __init__(self, size) -> None:
         self.board = BoardThread(size)
-        self.semaphore = Semaphore(1)
+        print(str(self.board))
+        self.semaphore = Lock()
         self.redFrogThread = RedFrogThread(self.board, self.semaphore)
         self.blueFrogThread = BlueFrogThread(self.board, self.semaphore)
 
     def start(self):
-        self.redFrogThread.start()
         self.blueFrogThread.start()
+        self.redFrogThread.start()
+
+    def finish(self):
+        self.blueFrogThread.join()
+        self.redFrogThread.join()
