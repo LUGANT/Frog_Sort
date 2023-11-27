@@ -2,6 +2,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from math import ceil, floor
 import time
+from colorama import Fore, init
+
+init(autoreset=True)
 
 class Frog(ABC):
     
@@ -82,7 +85,7 @@ class Frog(ABC):
 class RedFrog(Frog):
 
     def __str__(self):
-        return 'RedFrog'
+        return f'{Fore.RED}RedFrog{Fore.RESET}'
 
     def _moveOneStep(self, board:Board):
         try:
@@ -129,7 +132,7 @@ class RedFrog(Frog):
 class BlueFrog(Frog):
 
     def __str__(self):
-        return 'BlueFrog'
+        return f'{Fore.BLUE}BlueFrog{Fore.RESET}'
 
     def _moveOneStep(self, board:Board):
         try:
@@ -194,7 +197,8 @@ class Board():
         self.steps = []
 
     def __str__(self) -> str:
-        return str([str(frog) if frog is not None else None for frog in self.array])
+        return '[' + ', '.join(f'{Fore.YELLOW}None{Fore.RESET}' if frog is None else str(frog) for frog in self.array) + ']'
+
 
     def moveFrog(self, index:int, action):
         try:
